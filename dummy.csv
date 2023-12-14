@@ -1,0 +1,98 @@
+reject
+aa13,Rrose,1,100,55.00
+aa14,Rose,3,100,65.00
+aa15,Rose,2,1001,1.00
+aa16,Rose,1,101,10.00
+aa17,Rose,1,9,10.00
+aa18,Rose,1,100,0.00
+
+low buy order
+aa19,Rose,2,100,55.00
+aa20,Rose,2,100,45.00
+aa21,Rose,1,100,35.00
+aa22,Rose,2,100,45.00
+aa23,Rose,2,100,85.00
+
+high sell order
+aa29,Rose,1,100,55.00
+aa30,Rose,1,100,45.00
+aa31,Rose,2,100,75.00
+aa32,Rose,1,100,25.00
+aa33,Rose,1,100,45.00
+
+---sell sell buy
+
+fill fill eq price
+aa40,Rose,2,100,55.00
+aa41,Rose,2,100,45.00
+aa42,Rose,1,100,45.00
+
+fill fill diff price
+aa50,Rose,2,100,55.00
+aa51,Rose,2,100,45.00
+aa52,Rose,1,100,65.00
+
+---buy buy sell
+aa60,Rose,1,100,25.00
+aa61,Rose,1,100,45.00
+aa62,Rose,1,100,45.00
+aa63,Rose,2,100,35.00
+
+---buy Fill Pfill
+aa70,Rose,2,100,55.00
+aa71,Rose,2,200,45.00
+aa72,Rose,1,50,65.00
+
+---sell fill Pfill
+aa80,Rose,1,200,35.00
+aa81,Rose,1,200,45.00
+aa82,Rose,2,50,25.00
+
+
+---buy pfill  fill   pfill fill and add new buy
+aa90,Rose,2,10,35.00
+aa91,Rose,2,20,45.00
+aa92,Rose,2,40,40.00
+aa93,Rose,1,80,40.00
+
+---buy pfill  fill   then  fill pfill
+aa100,Rose,2,10,35.00
+aa101,Rose,2,20,45.00
+aa102,Rose,2,40,40.00
+aa103,Rose,1,20,40.00
+
+---sell pfill  fill   pfill fill and add new sell
+aa110,Rose,1,10,35.00
+aa111,Rose,1,20,45.00
+aa112,Rose,1,40,40.00
+aa113,Rose,2,90,40.00
+
+
+---sell pfill  fill   then  fill pfill
+aa120,Rose,1,10,35.00
+aa121,Rose,1,20,45.00
+aa122,Rose,1,40,40.00
+aa123,Rose,2,50,40.00
+
+
+
+
+aa22,Rose,2,100,50.00
+aa23,Rose,2,100,70.00
+aa24,Rose,1,100,70.00
+aa19,Lavender,1,100,50.00
+aa20,Lavender,1,100,50.00
+aa21,Lavender,2,100,50.00
+aa22,Lavender,2,100,50.00
+aa19,Orchid,1,100,50.00
+aa20,Orchid,1,100,50.00
+aa21,Orchid,2,100,50.00
+aa22,Orchid,2,100,50.00
+aa19,Tulip,1,100,50.00
+aa20,Tulip,1,100,50.00
+aa21,Tulip,2,100,50.00
+aa22,Tulip,2,100,50.00
+aa19,Lotus,1,100,50.00
+aa20,Lotus,1,100,50.00
+aa21,Lotus,2,100,50.00
+aa22,Lotus,2,100,50.00
