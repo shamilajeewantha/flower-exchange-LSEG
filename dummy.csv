@@ -1,10 +1,36 @@
-reject
-aa13,Rrose,1,100,55.00
+example 2
+aa13,Rose,2,100,55.00
+aa14,Rose,2,100,45.00
+aa15,Rose,1,100,35.00
+
+example 3
+aa13,Rose,2,100,55.00
+aa14,Rose,2,100,45.00
+aa15,Rose,1,100,45.00
+
+example 4
+aa13,Rose,2,100,55.00
+aa14,Rose,2,100,45.00
+aa15,Rose,1,200,45.00
+
+example 5
+aa13,Rose,1,100,55.00
+aa14,Rose,1,100,65.00
+aa15,Rose,2,300,1.00
+
+example 6
+aa13,Rose,1,100,55
+aa14,Rose,1,100,65
+aa15,Rose,2,300,1
+aa16,Rose,1,100,2
+
+
+example 7
+aa13,,1,100,55.00
 aa14,Rose,3,100,65.00
-aa15,Rose,2,1001,1.00
-aa16,Rose,1,101,10.00
-aa17,Rose,1,9,10.00
-aa18,Rose,1,100,0.00
+aa15,Lavender,2,101,1.00
+aa16,Tulip,1,100,-1.00
+aa17,Orchid,1,1000,-1.00
 
 low buy order
 aa19,Rose,2,100,55.00
@@ -73,6 +99,10 @@ aa120,Rose,1,10,35.00
 aa121,Rose,1,20,45.00
 aa122,Rose,1,40,40.00
 aa123,Rose,2,50,40.00
+
+
+
+
 
 
 

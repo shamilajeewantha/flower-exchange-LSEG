@@ -5,6 +5,7 @@
 #include <string>
 #include <queue>
 #include <stack>
+#include <iomanip>
 #include <unordered_set>
 #include <unordered_map>
 
@@ -145,9 +146,9 @@ void writeExecution(OrderData &order, ofstream &reportFile)
                << order.clientOrderID << ","
                << order.instrument << ","
                << order.side << ","
-               << order.quantity << ","
-               << order.price << ","
                << order.status << ","
+               << order.quantity << ","
+               << std::fixed << std::setprecision(2) << order.price << "," // assuming the precision needed in the execution report is 2 decimal points as in examples. But for internal execution the real precise number is considered.
                << order.reason << ","
                << order.priorityNumber << "\n";
 }
@@ -349,7 +350,7 @@ int main()
 {
 
     // Creating the Execution Report file
-    ofstream reportFile("ExecutionReport.csv");
+    ofstream reportFile("execution_rep.csv");
     if (!reportFile.is_open())
     {
         cerr << "Unable to create ExecutionReport.csv" << endl;
