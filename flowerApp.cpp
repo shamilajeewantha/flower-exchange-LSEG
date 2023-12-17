@@ -6,12 +6,15 @@
 #include <queue>
 #include <stack>
 #include <iomanip>
+#include <chrono>
 #include <unordered_set>
 #include <unordered_map>
 
 #define FLOWER_TYPES std::unordered_set<std::string>({"Rose", "Lavender", "Lotus", "Tulip", "Orchid"})
 
 using namespace std;
+
+///////////////////////////////////////////// Data Structures //////////////////////////////////////////////////////////////
 
 // Stores all the order details coming from the csv
 struct OrderData
@@ -52,8 +55,19 @@ struct OrderBook
     std::priority_queue<OrderData> side2;
 };
 
+///////////////////////////////////////////// Global variables //////////////////////////////////////////////////////////////
+
+// Creating the Execution Report file
+ofstream reportFile("execution_rep.csv");
+
 // used to store all 5 order books created
 std::unordered_map<std::string, OrderBook> orderBooks;
+
+// Declare global variables for start and end timestamps
+std::chrono::high_resolution_clock::time_point start_time;
+std::chrono::high_resolution_clock::time_point end_time;
+
+////////////////////////////////////////////////// Functions //////////////////////////////////////////////////////////////
 
 // Initialize 5 order books based on flower types
 void initializeOrderBooks()
@@ -139,8 +153,11 @@ bool validOrder(OrderData &order)
 }
 
 // Used to save entries to execution_rep.csv
-void writeExecution(OrderData &order, ofstream &reportFile)
+void writeExecution(OrderData &order)
 {
+    end_time = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> duration = end_time - start_time;
+
     // Writing the processed data and additional columns to the report
     reportFile << order.OrderID << ","
                << order.clientOrderID << ","
@@ -150,210 +167,202 @@ void writeExecution(OrderData &order, ofstream &reportFile)
                << order.quantity << ","
                << std::fixed << std::setprecision(2) << order.price << "," // assuming the precision needed in the execution report is 2 decimal points as in examples. But for internal execution the real precise number is considered.
                << order.reason << ","
+               << to_string(duration.count()) << ","
                << order.priorityNumber << "\n";
 }
 
 // Function to process data and create Execution Report
-void processOrder(OrderData &order, ofstream &reportFile)
+void processOrder(OrderData &order)
 {
-    string status;
-    if (validOrder(order))
+    // start time for valid transactions
+    start_time = std::chrono::high_resolution_clock::now();
+
+    if (order.side == 1)
     {
-
-        if (order.side == 1)
+        cout << "buy order : " << order.clientOrderID << " " << order.price << endl;
+        // if side 2 pq empty no need to execute add new to side 1
+        if (orderBooks[order.instrument].side2.empty())
         {
-            cout << "buy order : " << order.clientOrderID << " " << order.price << endl;
-            // if side 2 pq empty no need to execute add new to side 1
-            if (orderBooks[order.instrument].side2.empty())
-            {
-                order.status = "New";
-                order.priorityNumber = ++orderBooks[order.instrument].orders_count_for_price_side1[order.price];
-                orderBooks[order.instrument].side1.push(order);
-                cout << "Side 2 empty : " << order.status << "\n\n";
-                writeExecution(order, reportFile);
-            }
-            // side2 has a top and not empty
-            // top sell price higher than buy order can't execute; add buy order
-            else if (orderBooks[order.instrument].side2.top().price > order.price)
-            {
-                order.status = "New";
-                order.priorityNumber = ++orderBooks[order.instrument].orders_count_for_price_side1[order.price];
-                orderBooks[order.instrument].side1.push(order);
-                cout << "Side 2 sell price higher : top sell price : " << orderBooks[order.instrument].side2.top().price << " " << order.status << "\n\n";
-                writeExecution(order, reportFile);
-            }
-            // execution can happen
-            else
-            {
-                if (orderBooks[order.instrument].side2.top().quantity == order.quantity)
-                {
-                    OrderData topOrder = orderBooks[order.instrument].side2.top();
-                    topOrder.status = "Fill";
-                    orderBooks[order.instrument].side2.pop();
-
-                    order.price = topOrder.price;
-                    order.status = "Fill";
-                    order.priorityNumber = -1; // this order doesn't enter orderbooks
-
-                    writeExecution(order, reportFile);
-                    writeExecution(topOrder, reportFile);
-                    cout << "Fill Fill : " << topOrder.clientOrderID << "\n\n";
-                }
-                else if (orderBooks[order.instrument].side2.top().quantity > order.quantity)
-                {
-                    OrderData topOrder = orderBooks[order.instrument].side2.top();
-                    topOrder.quantity -= order.quantity;
-                    topOrder.status = "Pfill";
-                    orderBooks[order.instrument].side2.pop();
-                    orderBooks[order.instrument].side2.push(topOrder);
-                    topOrder.quantity = order.quantity;
-
-                    order.price = topOrder.price;
-                    order.status = "Fill";
-                    order.priorityNumber = -1; // this order doesn't enter orderbooks
-
-                    writeExecution(order, reportFile);
-                    writeExecution(topOrder, reportFile);
-                    cout << "Fill Pfill : " << topOrder.clientOrderID << "\n\n";
-                }
-                else if (orderBooks[order.instrument].side2.top().quantity < order.quantity)
-                {
-                    OrderData topOrder = orderBooks[order.instrument].side2.top();
-                    orderBooks[order.instrument].side2.pop();
-                    topOrder.status = "Fill";
-
-                    double temp_order_price = order.price;
-                    int temp_order_quantity = order.quantity - topOrder.quantity;
-                    order.price = topOrder.price;
-                    order.quantity = topOrder.quantity;
-                    order.status = "Pfill";
-
-                    writeExecution(order, reportFile);
-                    writeExecution(topOrder, reportFile);
-
-                    cout << "Pfill Fill : " << topOrder.clientOrderID << "\n\n";
-
-                    order.price = temp_order_price;
-                    order.quantity = temp_order_quantity;
-
-                    if (orderBooks[order.instrument].side2.empty() || orderBooks[order.instrument].side2.top().price > order.price)
-                    {
-                        order.priorityNumber = ++orderBooks[order.instrument].orders_count_for_price_side1[order.price];
-                        orderBooks[order.instrument].side1.push(order);
-                    }
-                    else
-                    {
-                        processOrder(order, reportFile);
-                    }
-                }
-            }
+            order.status = "New";
+            order.priorityNumber = ++orderBooks[order.instrument].orders_count_for_price_side1[order.price];
+            orderBooks[order.instrument].side1.push(order);
+            cout << "Side 2 empty : " << order.status << "\n\n";
+            writeExecution(order);
         }
-        else if (order.side == 2)
+        // side2 has a top and not empty
+        // top sell price higher than buy order can't execute; add buy order
+        else if (orderBooks[order.instrument].side2.top().price > order.price)
         {
-            cout << "sell order : " << order.clientOrderID << " " << order.price << endl;
-            // if side 1 pq empty no need to execute add new to side 2
-            if (orderBooks[order.instrument].side1.empty())
+            order.status = "New";
+            order.priorityNumber = ++orderBooks[order.instrument].orders_count_for_price_side1[order.price];
+            orderBooks[order.instrument].side1.push(order);
+            cout << "Side 2 sell price higher : top sell price : " << orderBooks[order.instrument].side2.top().price << " " << order.status << "\n\n";
+            writeExecution(order);
+        }
+        // execution can happen
+        else
+        {
+            if (orderBooks[order.instrument].side2.top().quantity == order.quantity)
             {
-                order.status = "New";
-                order.priorityNumber = ++orderBooks[order.instrument].orders_count_for_price_side2[order.price];
-                orderBooks[order.instrument].side2.push(order);
-                cout << "Side 1 empty. " << order.status << "\n\n";
-                writeExecution(order, reportFile);
+                OrderData topOrder = orderBooks[order.instrument].side2.top();
+                topOrder.status = "Fill";
+                orderBooks[order.instrument].side2.pop();
+
+                order.price = topOrder.price;
+                order.status = "Fill";
+                order.priorityNumber = -1; // this order doesn't enter orderbooks
+
+                writeExecution(order);
+                writeExecution(topOrder);
+                cout << "Fill Fill : " << topOrder.clientOrderID << "\n\n";
             }
-            // side1 has a top and not empty
-            // top buy price lower than sell order can't execute add sell order
-            else if (orderBooks[order.instrument].side1.top().price < order.price)
+            else if (orderBooks[order.instrument].side2.top().quantity > order.quantity)
             {
-                order.status = "New";
-                order.priorityNumber = ++orderBooks[order.instrument].orders_count_for_price_side2[order.price];
-                orderBooks[order.instrument].side2.push(order);
-                cout << "Side 1 buy price lower : top buy price : " << orderBooks[order.instrument].side1.top().price << " " << order.status << "\n\n";
-                writeExecution(order, reportFile);
+                OrderData topOrder = orderBooks[order.instrument].side2.top();
+                topOrder.quantity -= order.quantity;
+                topOrder.status = "Pfill";
+                orderBooks[order.instrument].side2.pop();
+                orderBooks[order.instrument].side2.push(topOrder);
+                topOrder.quantity = order.quantity;
+
+                order.price = topOrder.price;
+                order.status = "Fill";
+                order.priorityNumber = -1; // this order doesn't enter orderbooks
+
+                writeExecution(order);
+                writeExecution(topOrder);
+                cout << "Fill Pfill : " << topOrder.clientOrderID << "\n\n";
             }
-            // execution can happen
-            else
+            else if (orderBooks[order.instrument].side2.top().quantity < order.quantity)
             {
-                if (orderBooks[order.instrument].side1.top().quantity == order.quantity)
+                OrderData topOrder = orderBooks[order.instrument].side2.top();
+                orderBooks[order.instrument].side2.pop();
+                topOrder.status = "Fill";
+
+                double temp_order_price = order.price;
+                int temp_order_quantity = order.quantity - topOrder.quantity;
+                order.price = topOrder.price;
+                order.quantity = topOrder.quantity;
+                order.status = "Pfill";
+
+                writeExecution(order);
+                writeExecution(topOrder);
+
+                cout << "Pfill Fill : " << topOrder.clientOrderID << "\n\n";
+
+                order.price = temp_order_price;
+                order.quantity = temp_order_quantity;
+
+                if (orderBooks[order.instrument].side2.empty() || orderBooks[order.instrument].side2.top().price > order.price)
                 {
-                    OrderData topOrder = orderBooks[order.instrument].side1.top();
-                    topOrder.status = "Fill";
-                    orderBooks[order.instrument].side1.pop();
-
-                    order.price = topOrder.price;
-                    order.status = "Fill";
-                    order.priorityNumber = -1; // this order doesn't enter orderbooks
-
-                    writeExecution(order, reportFile);
-                    writeExecution(topOrder, reportFile);
-                    cout << "Fill Fill : " << topOrder.clientOrderID << "\n\n";
+                    order.priorityNumber = ++orderBooks[order.instrument].orders_count_for_price_side1[order.price];
+                    orderBooks[order.instrument].side1.push(order);
                 }
-                else if (orderBooks[order.instrument].side1.top().quantity > order.quantity)
+                else
                 {
-                    OrderData topOrder = orderBooks[order.instrument].side1.top();
-                    topOrder.quantity -= order.quantity;
-                    topOrder.status = "Pfill";
-                    orderBooks[order.instrument].side1.pop();
-                    orderBooks[order.instrument].side1.push(topOrder);
-                    topOrder.quantity = order.quantity;
-
-                    order.price = topOrder.price;
-                    order.status = "Fill";
-                    order.priorityNumber = -1; // this order doesn't enter orderbooks
-
-                    writeExecution(order, reportFile);
-                    writeExecution(topOrder, reportFile);
-                    cout << "Fill Pfill : " << topOrder.clientOrderID << "\n\n";
-                }
-                else if (orderBooks[order.instrument].side1.top().quantity < order.quantity)
-                {
-                    OrderData topOrder = orderBooks[order.instrument].side1.top();
-                    orderBooks[order.instrument].side1.pop();
-                    topOrder.status = "Fill";
-
-                    double temp_order_price = order.price;
-                    int temp_order_quantity = order.quantity - topOrder.quantity;
-                    order.price = topOrder.price;
-                    order.quantity = topOrder.quantity;
-                    order.status = "Pfill";
-
-                    writeExecution(order, reportFile);
-                    writeExecution(topOrder, reportFile);
-
-                    cout << "Pfill Fill : " << topOrder.clientOrderID << "\n\n";
-
-                    order.price = temp_order_price;
-                    order.quantity = temp_order_quantity;
-
-                    if (orderBooks[order.instrument].side1.empty() || orderBooks[order.instrument].side1.top().price < order.price)
-                    {
-                        order.priorityNumber = ++orderBooks[order.instrument].orders_count_for_price_side2[order.price];
-                        orderBooks[order.instrument].side2.push(order);
-                    }
-                    else
-                    {
-                        processOrder(order, reportFile);
-                    }
+                    processOrder(order);
                 }
             }
         }
     }
-    else
+    else if (order.side == 2)
     {
-        order.priorityNumber = -1;
-        order.status = "Rejected";
-        writeExecution(order, reportFile);
+        cout << "sell order : " << order.clientOrderID << " " << order.price << endl;
+        // if side 1 pq empty no need to execute add new to side 2
+        if (orderBooks[order.instrument].side1.empty())
+        {
+            order.status = "New";
+            order.priorityNumber = ++orderBooks[order.instrument].orders_count_for_price_side2[order.price];
+            orderBooks[order.instrument].side2.push(order);
+            cout << "Side 1 empty. " << order.status << "\n\n";
+            writeExecution(order);
+        }
+        // side1 has a top and not empty
+        // top buy price lower than sell order can't execute add sell order
+        else if (orderBooks[order.instrument].side1.top().price < order.price)
+        {
+            order.status = "New";
+            order.priorityNumber = ++orderBooks[order.instrument].orders_count_for_price_side2[order.price];
+            orderBooks[order.instrument].side2.push(order);
+            cout << "Side 1 buy price lower : top buy price : " << orderBooks[order.instrument].side1.top().price << " " << order.status << "\n\n";
+            writeExecution(order);
+        }
+        // execution can happen
+        else
+        {
+            if (orderBooks[order.instrument].side1.top().quantity == order.quantity)
+            {
+                OrderData topOrder = orderBooks[order.instrument].side1.top();
+                topOrder.status = "Fill";
+                orderBooks[order.instrument].side1.pop();
+
+                order.price = topOrder.price;
+                order.status = "Fill";
+                order.priorityNumber = -1; // this order doesn't enter orderbooks
+
+                writeExecution(order);
+                writeExecution(topOrder);
+                cout << "Fill Fill : " << topOrder.clientOrderID << "\n\n";
+            }
+            else if (orderBooks[order.instrument].side1.top().quantity > order.quantity)
+            {
+                OrderData topOrder = orderBooks[order.instrument].side1.top();
+                topOrder.quantity -= order.quantity;
+                topOrder.status = "Pfill";
+                orderBooks[order.instrument].side1.pop();
+                orderBooks[order.instrument].side1.push(topOrder);
+                topOrder.quantity = order.quantity;
+
+                order.price = topOrder.price;
+                order.status = "Fill";
+                order.priorityNumber = -1; // this order doesn't enter orderbooks
+
+                writeExecution(order);
+                writeExecution(topOrder);
+                cout << "Fill Pfill : " << topOrder.clientOrderID << "\n\n";
+            }
+            else if (orderBooks[order.instrument].side1.top().quantity < order.quantity)
+            {
+                OrderData topOrder = orderBooks[order.instrument].side1.top();
+                orderBooks[order.instrument].side1.pop();
+                topOrder.status = "Fill";
+
+                double temp_order_price = order.price;
+                int temp_order_quantity = order.quantity - topOrder.quantity;
+                order.price = topOrder.price;
+                order.quantity = topOrder.quantity;
+                order.status = "Pfill";
+
+                writeExecution(order);
+                writeExecution(topOrder);
+
+                cout << "Pfill Fill : " << topOrder.clientOrderID << "\n\n";
+
+                order.price = temp_order_price;
+                order.quantity = temp_order_quantity;
+
+                if (orderBooks[order.instrument].side1.empty() || orderBooks[order.instrument].side1.top().price < order.price)
+                {
+                    order.priorityNumber = ++orderBooks[order.instrument].orders_count_for_price_side2[order.price];
+                    orderBooks[order.instrument].side2.push(order);
+                }
+                else
+                {
+                    processOrder(order);
+                }
+            }
+        }
     }
 }
+
+///////////////////////////////////////////// Main Function //////////////////////////////////////////////////////////////
 
 // main function
 int main()
 {
-
-    // Creating the Execution Report file
-    ofstream reportFile("execution_rep.csv");
     if (!reportFile.is_open())
     {
-        cerr << "Unable to create ExecutionReport.csv" << endl;
+        cerr << "Unable to create execution _rep.csv" << endl;
         return 1;
     }
 
@@ -385,10 +394,11 @@ int main()
         columnTitles.push_back("Order ID");
         columnTitles.push_back("Exec Status");
         columnTitles.push_back("Reason");
+        columnTitles.push_back("Transaction Time");
         columnTitles.push_back("Pr. Seq");
 
         // Writing column titles including the new ones (Status and Reason)
-        reportFile << columnTitles[5] + "," + columnTitles[0] + "," + columnTitles[1] + "," + columnTitles[2] + "," + columnTitles[6] + "," + columnTitles[3] + "," + columnTitles[4] + "," + columnTitles[7] + "," + columnTitles[8] + "\n";
+        reportFile << columnTitles[5] + "," + columnTitles[0] + "," + columnTitles[1] + "," + columnTitles[2] + "," + columnTitles[6] + "," + columnTitles[3] + "," + columnTitles[4] + "," + columnTitles[7] + "," + columnTitles[8] + "," + columnTitles[9] + "\n";
 
         // Read and process the data
         while (getline(OrdersFile, line))
@@ -396,7 +406,6 @@ int main()
             stringstream ss(line);
             OrderData order;
             string cell;
-            bool rejected = false;
 
             // Parsing the CSV data into OrderData structure
             order.OrderID = "ord" + std::to_string(order_count);
@@ -417,8 +426,22 @@ int main()
             getline(ss, cell, ',');
             order.price = stod(cell);
 
-            // Process the orders and generate the Execution Report
-            processOrder(order, reportFile);
+            // start time for rejected transactions
+            start_time = std::chrono::high_resolution_clock::now();
+
+            if (validOrder(order))
+            {
+                // Order accepted
+                // Process the orders and generate the Execution Report
+                processOrder(order);
+            }
+            // Order rejected
+            else
+            {
+                order.priorityNumber = -1;
+                order.status = "Rejected";
+                writeExecution(order);
+            }
         }
         OrdersFile.close();
     }
@@ -430,7 +453,7 @@ int main()
     }
 
     reportFile.close();
-    cout << "Execution Report 'ExecutionReport.csv' created successfully." << endl;
+    cout << "Execution Report 'execution _rep.csv' created successfully." << endl;
 
     for (const auto &flower : FLOWER_TYPES)
     {
